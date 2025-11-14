@@ -10,6 +10,8 @@ import { createPOI, getPOI, getApprovedPOIs, getUserPOIs, updatePOI, deletePOI, 
 import { createTour, getTour, getAllTours, getUserTours, updateTour, deleteTour } from './tourController.js';
 import { createReview, getReview, getTrackReviews, getUserReviews, updateReview, deleteReview } from './reviewController.js';
 import { migrateUsersFromLocalStorage, getAllUsers, userExists } from './migrationController.js';
+import bcryptjs from 'bcryptjs';
+import { v4 as uuidv4 } from 'uuid';
 
 dotenv.config();
 
@@ -503,6 +505,46 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// ============ HELPER FUNCTIONS ============
+
+async function initializeAdminIfNeeded(database) {
+  try {
+    // Check if admin exists
+    const { getAsync } = await import('./db.js');
+    const adminExists = await getAsync(database, 'SELECT * FROM users WHERE email = ?', ['admin@singletrack.app']);
+    
+    if (adminExists) {
+      return; // Admin already exists
+    }
+
+    // Create admin user
+    const passwordHash = await bcryptjs.hash('admin123', 10);
+    const userId = uuidv4();
+    const now = new Date().toISOString();
+
+    await runAsync(database,
+      `INSERT INTO users (
+        id, email, username, passwordHash, firstName, lastName, 
+        birthDate, role, approved, isBanned, profilePhoto, bio, 
+        location, phone, website, instagram, facebook, strava,
+        createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        userId, 'admin@singletrack.app', 'admin', passwordHash,
+        'Admin', 'User', '',
+        'admin', 1, 0,
+        '', '', '',
+        '', '', '',
+        '', '', now, now
+      ]
+    );
+
+    console.log('✅ Admin account initialized: admin@singletrack.app / admin123');
+  } catch (error) {
+    console.error('⚠️  Error initializing admin:', error.message);
+  }
+}
+
 // ============ SERVER STARTUP ============
 
 async function startServer() {
@@ -510,6 +552,9 @@ async function startServer() {
     console.log('🚀 Initializing database...');
     db = await initDatabase();
     console.log('✅ Database initialized');
+
+    // Initialize admin if needed
+    await initializeAdminIfNeeded(db);
 
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
