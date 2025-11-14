@@ -465,6 +465,17 @@ export const getLatestReview = (trackId: string): Review | null => {
     return sorted[0];
 };
 
+// Get all reviews across all tracks
+export const getReviews = (): Review[] => {
+    const data = localStorage.getItem(REVIEWS_KEY);
+    return data ? JSON.parse(data) : [];
+};
+
+// Save all reviews
+export const saveReviews = (reviews: Review[]): void => {
+    localStorage.setItem(REVIEWS_KEY, JSON.stringify(reviews));
+};
+
 export const getTrailConditionLabel = (condition: string): string => {
     const labels: Record<string, string> = {
         abbandonato: '🔴 Abbandonato',

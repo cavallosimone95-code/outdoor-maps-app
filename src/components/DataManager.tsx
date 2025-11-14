@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { getTracks, getCustomPOIs, saveTracks, saveCustomPOIs } from '../services/trackStorage';
-import { getCurrentUser, canDevelop } from '../services/authService';
+import { getTracks, getCustomPOIs, saveTracks, saveCustomPOIs, getTours, saveTours, getReviews, saveReviews } from '../services/trackStorage';
+import { getCurrentUser, canDevelop, getUsers, saveUsers } from '../services/authService';
 
 export default function DataManager() {
     const [showExportSuccess, setShowExportSuccess] = useState(false);
@@ -9,12 +9,18 @@ export default function DataManager() {
     const handleExportData = () => {
         const tracks = getTracks();
         const pois = getCustomPOIs();
+        const tours = getTours();
+        const reviews = getReviews();
+        const users = getUsers();
         
         const exportData = {
             version: '1.0',
             exportDate: new Date().toISOString(),
             tracks,
-            customPOIs: pois
+            customPOIs: pois,
+            tours,
+            reviews,
+            users
         };
 
         const dataStr = JSON.stringify(exportData, null, 2);
@@ -44,21 +50,27 @@ export default function DataManager() {
                 const content = e.target?.result as string;
                 const data = JSON.parse(content);
 
-                if (!data.tracks && !data.customPOIs) {
+                if (!data.tracks && !data.customPOIs && !data.tours && !data.reviews) {
                     alert('❌ File non valido. Assicurati di selezionare un backup Singletrack.');
                     return;
                 }
 
                 const currentTracks = getTracks();
                 const currentPOIs = getCustomPOIs();
+                const currentTours = getTours();
+                const currentReviews = getReviews();
 
                 const message = `📥 Trovati nel backup:
 - ${data.tracks?.length || 0} singletrack
-- ${data.customPOIs?.length || 0} punti di interesse
+- ${data.customPOIs?.length || 0} POI
+- ${data.tours?.length || 0} tour
+- ${data.reviews?.length || 0} recensioni
 
 Attualmente hai:
 - ${currentTracks.length} singletrack
-- ${currentPOIs.length} punti di interesse
+- ${currentPOIs.length} POI
+- ${currentTours.length} tour
+- ${currentReviews.length} recensioni
 
 Come vuoi procedere?`;
 
@@ -68,12 +80,16 @@ Come vuoi procedere?`;
                     // Sostituisci tutto
                     if (data.tracks) saveTracks(data.tracks);
                     if (data.customPOIs) saveCustomPOIs(data.customPOIs);
+                    if (data.tours) saveTours(data.tours);
+                    if (data.reviews) saveReviews(data.reviews);
+                    if (data.users && getUsers().some(u => u.role === 'admin')) {
+                        saveUsers(data.users); // Solo se l'utente è admin
+                    }
                 } else {
                     // Unisci
                     if (data.tracks) {
                         const merged = [...currentTracks];
                         data.tracks.forEach((track: any) => {
-                            // Evita duplicati controllando l'ID
                             if (!merged.find(t => t.id === track.id)) {
                                 merged.push(track);
                             }
@@ -88,6 +104,24 @@ Come vuoi procedere?`;
                             }
                         });
                         saveCustomPOIs(merged);
+                    }
+                    if (data.tours) {
+                        const merged = [...currentTours];
+                        data.tours.forEach((tour: any) => {
+                            if (!merged.find(t => t.id === tour.id)) {
+                                merged.push(tour);
+                            }
+                        });
+                        saveTours(merged);
+                    }
+                    if (data.reviews) {
+                        const merged = [...currentReviews];
+                        data.reviews.forEach((review: any) => {
+                            if (!merged.find(r => r.date === review.date && r.userName === review.userName)) {
+                                merged.push(review);
+                            }
+                        });
+                        saveReviews(merged);
                     }
                 }
 
@@ -142,6 +176,8 @@ Sei sicuro di voler procedere?`;
 
     const tracks = getTracks();
     const pois = getCustomPOIs();
+    const tours = getTours();
+    const reviews = getReviews();
     const currentUser = getCurrentUser();
     const isApprovedDeveloper = !!currentUser && canDevelop(currentUser) && currentUser.approved;
 
@@ -161,7 +197,21 @@ Sei sicuro di voler procedere?`;
                     <div className="stat-icon">📍</div>
                     <div className="stat-content">
                         <div className="stat-value">{pois.length}</div>
-                        <div className="stat-label">POI Personalizzati</div>
+                        <div className="stat-label">POI</div>
+                    </div>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-icon">🗺️</div>
+                    <div className="stat-content">
+                        <div className="stat-value">{tours.length}</div>
+                        <div className="stat-label">Tour</div>
+                    </div>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-icon">⭐</div>
+                    <div className="stat-content">
+                        <div className="stat-value">{reviews.length}</div>
+                        <div className="stat-label">Recensioni</div>
                     </div>
                 </div>
             </div>
