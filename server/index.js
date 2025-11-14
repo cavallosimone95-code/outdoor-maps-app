@@ -569,7 +569,11 @@ app.get('/api/admin/users/pending', authMiddleware, async (req, res) => {
       return res.status(403).json({ success: false, message: 'Admin access required' });
     }
     
-    const stmt = db.prepare('SELECT id, email, username, firstName, lastName, role, approved, createdAt FROM users WHERE approved = 0 AND role IN (?, ?)');
+    const stmt = db.prepare(`
+      SELECT id, email, username, firstName, lastName, role, approved, createdAt 
+      FROM users 
+      WHERE approved = 0 AND role IN (?, ?)
+    `);
     const users = stmt.all('free', 'plus');
     res.json({ success: true, users });
   } catch (err) {
@@ -585,7 +589,11 @@ app.get('/api/admin/users/approved', authMiddleware, async (req, res) => {
       return res.status(403).json({ success: false, message: 'Admin access required' });
     }
     
-    const stmt = db.prepare('SELECT id, email, username, firstName, lastName, role, approved, createdAt FROM users WHERE approved = 1');
+    const stmt = db.prepare(`
+      SELECT id, email, username, firstName, lastName, role, approved, createdAt 
+      FROM users 
+      WHERE approved = 1
+    `);
     const users = stmt.all();
     res.json({ success: true, users });
   } catch (err) {
@@ -676,6 +684,26 @@ app.put('/api/admin/users/:id/role', authMiddleware, async (req, res) => {
     res.json({ success: true, message: 'User role updated successfully' });
   } catch (err) {
     console.error('Update user role error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// DEBUG: Get all users (temporary - remove in production)
+app.get('/api/admin/users/all', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    
+    const stmt = db.prepare(`
+      SELECT id, email, username, firstName, lastName, role, approved, createdAt 
+      FROM users 
+      ORDER BY createdAt DESC
+    `);
+    const users = stmt.all();
+    res.json({ success: true, users, total: users.length });
+  } catch (err) {
+    console.error('Get all users error:', err);
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
