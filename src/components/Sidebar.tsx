@@ -328,7 +328,7 @@ const Sidebar: React.FC = () => {
         <div className="sidebar">
             <div className="sidebar-header">
                 <div className="sidebar-logo" onClick={() => window.location.reload()} style={{ cursor: 'pointer' }}>
-                    <img src="/images/logo.png" alt="Singletrack Logo" />
+                    <img src="/images/logo.PNG" alt="Singletrack Logo" />
                     <h1>Singletrack</h1>
                 </div>
                 <div className="tagline">Outdoor Trail Maps</div>
