@@ -1,0 +1,44 @@
+{
+  "exportDate": "2025-11-14T21:14:39.090Z",
+  "database": {
+    "users": [
+      {
+        "id": "7aeb885e-9fa2-4ae3-b1b6-5e0273ca50fc",
+        "email": "admin@singletrack.app",
+        "username": "admin",
+        "passwordHash": "$2a$10$d5P5iTdBMuDi1o14rjbCY.4VEHnMR7WtLJjgXuGYml1iBISa.K/0G",
+        "firstName": "",
+        "lastName": "",
+        "birthDate": "",
+        "role": "admin",
+        "approved": 0,
+        "isBanned": 0,
+        "bannedReason": null,
+        "bannedAt": null,
+        "profilePhoto": "",
+        "bio": "",
+        "location": "",
+        "phone": "",
+        "website": "",
+        "instagram": "",
+        "facebook": "",
+        "strava": "",
+        "createdAt": "2025-11-14T21:03:33.952Z",
+        "updatedAt": "2025-11-14T21:03:33.952Z"
+      }
+    ],
+    "tracks": [],
+    "pois": [],
+    "tours": [],
+    "reviews": [],
+    "sessions": []
+  },
+  "summary": {
+    "usersCount": 1,
+    "tracksCount": 0,
+    "poisCount": 0,
+    "toursCount": 0,
+    "reviewsCount": 0,
+    "sessionsCount": 0
+  }
+}

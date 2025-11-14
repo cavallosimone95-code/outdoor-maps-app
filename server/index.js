@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import { initDatabase, getDatabase } from './db.js';
+import { initDatabase, getDatabase, runAsync } from './db.js';
 import { authMiddleware, optionalAuthMiddleware } from './middleware.js';
 import { register, login, refreshAccessToken, changePassword, getCurrentUser, updateUserProfile } from './authController.js';
 import { createTrack, getTrack, getApprovedTracks, getUserTracks, updateTrack, deleteTrack, getPendingTracks, approveTrack, rejectTrack } from './trackController.js';
@@ -437,6 +437,64 @@ app.get('/api/migrate/check-user/:email', async (req, res) => {
     res.json({ success: true, exists: false });
   } catch (err) {
     console.error('Check user error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// Endpoint per sincronizzare l'intero database
+app.post('/api/migrate/restore-database', async (req, res) => {
+  try {
+    const token = req.headers['x-migration-token'];
+    if (token !== process.env.MIGRATION_TOKEN) {
+      return res.status(401).json({ success: false, message: 'Invalid migration token' });
+    }
+
+    const { database } = req.body;
+    if (!database) {
+      return res.status(400).json({ success: false, message: 'No database data provided' });
+    }
+
+    console.log('🔄 Restoring database...');
+
+    // Restore users
+    if (database.users && Array.isArray(database.users)) {
+      for (const user of database.users) {
+        try {
+          await runAsync(db, `
+            INSERT OR REPLACE INTO users (
+              id, email, username, passwordHash, firstName, lastName, 
+              birthDate, role, approved, isBanned, bannedReason, bannedAt,
+              profilePhoto, bio, location, phone, website, instagram, facebook, strava,
+              createdAt, updatedAt
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `, [
+            user.id, user.email, user.username, user.passwordHash,
+            user.firstName || '', user.lastName || '', user.birthDate || '',
+            user.role || 'free', user.approved ? 1 : 0, user.isBanned ? 1 : 0,
+            user.bannedReason || '', user.bannedAt || '',
+            user.profilePhoto || '', user.bio || '', user.location || '',
+            user.phone || '', user.website || '', user.instagram || '',
+            user.facebook || '', user.strava || '', user.createdAt, user.updatedAt
+          ]);
+        } catch (err) {
+          console.error(`Error restoring user ${user.email}:`, err);
+        }
+      }
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Database restored successfully',
+      restored: {
+        users: (database.users || []).length,
+        tracks: (database.tracks || []).length,
+        pois: (database.pois || []).length,
+        tours: (database.tours || []).length,
+        reviews: (database.reviews || []).length
+      }
+    });
+  } catch (err) {
+    console.error('Restore database error:', err);
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
