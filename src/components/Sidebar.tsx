@@ -12,13 +12,14 @@ import { ApprovalPanel } from './ApprovalPanel';
 import MessagesPanel from './MessagesPanel';
 import SavedToursPanel from './SavedToursPanel';
 import UserProfile from './UserProfile';
+import DataManager from './DataManager';
 import { fetchPOIs } from '../services/mapService';
 import { addTrack, addReview, addTour, addCustomPOI, getPendingTracks, getPendingPOIs, getPendingTrackUpdates } from '../services/trackStorage';
 import { logout, getCurrentUser, getPendingUsers, canDevelop } from '../services/authService';
 import type { POI } from '../types';
 import { getUnreadCount } from '../services/notificationService';
 
-type ViewType = 'explore' | 'search' | 'create' | 'review' | 'tour' | 'saved-tours' | 'add-poi' | 'approval' | 'messages' | 'profile' | 'search-tour' | 'explore-tour' | 'upload-tour';
+type ViewType = 'explore' | 'search' | 'create' | 'review' | 'tour' | 'saved-tours' | 'add-poi' | 'approval' | 'messages' | 'profile' | 'search-tour' | 'explore-tour' | 'upload-tour' | 'settings';
 type POICategory = 'all' | 'bikeshop' | 'restaurant' | 'fountain' | 'market' | 'sleepnride' | 'viewpoint' | 'parking' | 'campsite';
 
 interface TrackPoint {
@@ -71,7 +72,7 @@ const Sidebar: React.FC = () => {
         }));
         
         // Notify about sidebar panel state (to hide TourStatsPanel when needed)
-        const panelsWithForms = ['search', 'create', 'review', 'tour', 'add-poi', 'search-tour', 'upload-tour', 'saved-tours'];
+        const panelsWithForms = ['search', 'create', 'review', 'tour', 'add-poi', 'search-tour', 'upload-tour', 'saved-tours', 'settings'];
         const hasPanelOpen = panelsWithForms.includes(activeView);
         window.dispatchEvent(new CustomEvent('sidebar:panel-state', { 
             detail: { panelOpen: hasPanelOpen } 
@@ -285,6 +286,7 @@ const Sidebar: React.FC = () => {
     if (currentUser) {
         menuItems.push({ id: 'messages', label: unreadCount > 0 ? `Messaggi (${unreadCount})` : 'Messaggi', icon: '🔔' });
         menuItems.push({ id: 'profile', label: 'Profilo', icon: '👤' });
+        menuItems.push({ id: 'settings', label: 'Impostazioni', icon: '⚙️' });
     }
 
     const categories: { id: POICategory; label: string; icon: string }[] = [
@@ -524,6 +526,9 @@ const Sidebar: React.FC = () => {
                             setActiveView('explore-tour');
                         }} 
                     />
+                )}
+                {activeView === 'settings' && currentUser && (
+                    <DataManager />
                 )}
             </div>
         </div>
