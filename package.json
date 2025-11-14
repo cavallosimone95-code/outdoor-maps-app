@@ -1,0 +1,50 @@
+{
+  "name": "singletrack-outdoor-maps",
+  "version": "1.0.0",
+  "description": "A basic outdoor maps application using React.",
+  "main": "src/index.tsx",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "keywords": [
+    "maps",
+    "outdoor",
+    "react",
+    "typescript"
+  ],
+  "author": "Cavallo Simone",
+  "license": "MIT",
+  "dependencies": {
+    "@types/leaflet-routing-machine": "^3.2.9",
+    "@types/leaflet.markercluster": "^1.5.6",
+    "axios": "^0.21.1",
+    "leaflet": "^1.7.1",
+    "leaflet-routing-machine": "^3.2.12",
+    "leaflet.markercluster": "^1.5.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1"
+  },
+  "devDependencies": {
+    "@types/google.maps": "^3.58.1",
+    "@types/leaflet": "^1.9.21",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "typescript": "^4.9.5"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

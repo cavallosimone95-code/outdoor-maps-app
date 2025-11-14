@@ -1,0 +1,43 @@
+/* Approval Panel Badge Layout Fix */
+
+/* Developers section badges */
+.approval-panel-badges-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 150px;
+    align-items: stretch;
+}
+
+.approval-panel-badges-container > div {
+    text-align: center;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.85em;
+}
+
+/* Ensure badges are centered */
+.developer-badge {
+    color: #3f51b5;
+    background: #e8eaf6;
+}
+
+.status-badge-active {
+    color: #2e7d32;
+    background: #e8f5e9;
+}
+
+.status-badge-pending {
+    color: #8a6d3b;
+    background: #fff3cd;
+}
+
+.approved-user-badge {
+    color: #666;
+}
+
+.standard-user-badge {
+    color: #666;
+    background: #e3f2fd;
+}
