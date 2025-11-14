@@ -1,5 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { getCurrentUser, updateUserProfile, changePassword, CurrentUser } from '../services/authService';
+import { getCurrentUserFromBackend, updateUserProfileViaBackend, changePasswordViaBackend } from '../services/backendAuth';
+
+interface CurrentUser {
+    id: string;
+    email: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    birthDate: string;
+    bio: string;
+    location: string;
+    phone: string;
+    website: string;
+    profilePhoto?: string;
+    role: string;
+    socialLinks?: {
+        instagram?: string;
+        facebook?: string;
+        strava?: string;
+    };
+}
 
 interface UserProfileProps {
     onClose: () => void;
@@ -37,23 +57,31 @@ export default function UserProfile({ onClose }: UserProfileProps) {
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     useEffect(() => {
-        const user = getCurrentUser();
-        if (user) {
-            setCurrentUser(user);
-            setFormData({
-                firstName: user.firstName || '',
-                lastName: user.lastName || '',
-                birthDate: user.birthDate || '',
-                bio: user.bio || '',
-                location: user.location || '',
-                phone: user.phone || '',
-                website: user.website || '',
-                instagram: user.socialLinks?.instagram || '',
-                facebook: user.socialLinks?.facebook || '',
-                strava: user.socialLinks?.strava || ''
-            });
-            setProfilePhotoPreview(user.profilePhoto || '');
-        }
+        // Fetch user from backend
+        const fetchUser = async () => {
+            try {
+                const user = await getCurrentUserFromBackend();
+                if (user) {
+                    setCurrentUser(user);
+                    setFormData({
+                        firstName: user.firstName || '',
+                        lastName: user.lastName || '',
+                        birthDate: user.birthDate || '',
+                        bio: user.bio || '',
+                        location: user.location || '',
+                        phone: user.phone || '',
+                        website: user.website || '',
+                        instagram: user.socialLinks?.instagram || '',
+                        facebook: user.socialLinks?.facebook || '',
+                        strava: user.socialLinks?.strava || ''
+                    });
+                    setProfilePhotoPreview(user.profilePhoto || '');
+                }
+            } catch (err) {
+                console.error('Error fetching user:', err);
+            }
+        };
+        fetchUser();
     }, []);
 
     const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,7 +133,7 @@ export default function UserProfile({ onClose }: UserProfileProps) {
                 }
             };
 
-            const result = await updateUserProfile(currentUser.id, profileUpdate);
+            const result = await updateUserProfileViaBackend(profileUpdate);
             
             if (result.success) {
                 setMessage({ type: 'success', text: result.message });
@@ -139,8 +167,7 @@ export default function UserProfile({ onClose }: UserProfileProps) {
         }
 
         try {
-            const result = await changePassword(
-                currentUser.id,
+            const result = await changePasswordViaBackend(
                 passwordData.currentPassword,
                 passwordData.newPassword
             );

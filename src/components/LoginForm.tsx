@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { login } from '../services/authService';
+import { loginViaBackend } from '../services/backendAuth';
 
 interface LoginFormProps {
     onSuccess: () => void;
@@ -12,18 +12,21 @@ export default function LoginForm({ onSuccess, onSwitchToRegister, showRegistrat
     const [password, setPassword] = useState('');
     const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setIsLoading(true);
 
         if (!email || !password) {
             setError('Email e password sono obbligatorie');
+            setIsLoading(false);
             return;
         }
 
         try {
-            const result = await login(email, password);
+            const result = await loginViaBackend(email, password);
 
             if (result.success) {
                 // Save "remember me" preference
@@ -32,13 +35,19 @@ export default function LoginForm({ onSuccess, onSwitchToRegister, showRegistrat
                 } else {
                     localStorage.removeItem('singletrack_remember_me');
                 }
+                // Store current user info
+                if (result.user) {
+                    localStorage.setItem('singletrack_user', JSON.stringify(result.user));
+                }
                 onSuccess();
             } else {
-                setError(result.message);
+                setError(result.message || 'Credenziali non valide');
             }
         } catch (err) {
             setError('Errore durante il login. Riprova più tardi.');
             console.error('Login error:', err);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -119,8 +128,8 @@ export default function LoginForm({ onSuccess, onSwitchToRegister, showRegistrat
                         </label>
                     </div>
 
-                    <button type="submit" className="btn-submit" style={{ width: '100%', marginTop: '16px' }}>
-                        🔓 Accedi
+                    <button type="submit" className="btn-submit" style={{ width: '100%', marginTop: '16px' }} disabled={isLoading}>
+                        {isLoading ? '⏳ Accesso in corso...' : '🔓 Accedi'}
                     </button>
                 </form>
 

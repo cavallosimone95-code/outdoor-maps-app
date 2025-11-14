@@ -15,7 +15,8 @@ import UserProfile from './UserProfile';
 import DataManager from './DataManager';
 import { fetchPOIs } from '../services/mapService';
 import { addTrack, addReview, addTour, addCustomPOI, getPendingTracks, getPendingPOIs, getPendingTrackUpdates } from '../services/trackStorage';
-import { logout, getCurrentUser, getPendingUsers, canDevelop } from '../services/authService';
+import { getCurrentUser, getPendingUsers, canDevelop } from '../services/authService';
+import { logoutViaBackend } from '../services/backendAuth';
 import type { POI } from '../types';
 import { getUnreadCount } from '../services/notificationService';
 
@@ -305,9 +306,9 @@ const Sidebar: React.FC = () => {
         ? pois 
         : pois.filter(poi => poi.type === selectedCategory);
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
         if (confirm('Vuoi disconnetterti?')) {
-            logout();
+            await logoutViaBackend();
             window.location.reload();
         }
     };

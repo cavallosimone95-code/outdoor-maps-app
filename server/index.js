@@ -5,6 +5,10 @@ import dotenv from 'dotenv';
 import { initDatabase, getDatabase } from './db.js';
 import { authMiddleware, optionalAuthMiddleware } from './middleware.js';
 import { register, login, refreshAccessToken, changePassword, getCurrentUser, updateUserProfile } from './authController.js';
+import { createTrack, getTrack, getApprovedTracks, getUserTracks, updateTrack, deleteTrack, getPendingTracks, approveTrack, rejectTrack } from './trackController.js';
+import { createPOI, getPOI, getApprovedPOIs, getUserPOIs, updatePOI, deletePOI, getPendingPOIs, approvePOI, rejectPOI } from './poiController.js';
+import { createTour, getTour, getAllTours, getUserTours, updateTour, deleteTour } from './tourController.js';
+import { createReview, getReview, getTrackReviews, getUserReviews, updateReview, deleteReview } from './reviewController.js';
 
 dotenv.config();
 
@@ -129,7 +133,265 @@ app.post('/api/users/change-password', authMiddleware, async (req, res) => {
   }
 });
 
-// ============ HEALTH CHECK ============
+// ============ TRACKS ENDPOINTS ============
+
+app.post('/api/tracks', authMiddleware, async (req, res) => {
+  try {
+    const result = await createTrack(db, req.userId, req.body);
+    res.status(result.success ? 201 : 400).json(result);
+  } catch (err) {
+    console.error('Create track error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.get('/api/tracks/approved', async (req, res) => {
+  try {
+    const tracks = await getApprovedTracks(db);
+    res.json({ success: true, tracks });
+  } catch (err) {
+    console.error('Get approved tracks error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.get('/api/tracks/user', authMiddleware, async (req, res) => {
+  try {
+    const tracks = await getUserTracks(db, req.userId);
+    res.json({ success: true, tracks });
+  } catch (err) {
+    console.error('Get user tracks error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.get('/api/tracks/:id', async (req, res) => {
+  try {
+    const track = await getTrack(db, req.params.id);
+    if (!track) {
+      return res.status(404).json({ success: false, message: 'Track not found' });
+    }
+    res.json({ success: true, track });
+  } catch (err) {
+    console.error('Get track error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.put('/api/tracks/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await updateTrack(db, req.params.id, req.userId, req.body);
+    res.status(result.success ? 200 : 400).json(result);
+  } catch (err) {
+    console.error('Update track error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.delete('/api/tracks/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await deleteTrack(db, req.params.id, req.userId);
+    res.status(result.success ? 200 : 400).json(result);
+  } catch (err) {
+    console.error('Delete track error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// ============ POI ENDPOINTS ============
+
+app.post('/api/pois', authMiddleware, async (req, res) => {
+  try {
+    const result = await createPOI(db, req.userId, req.body);
+    res.status(result.success ? 201 : 400).json(result);
+  } catch (err) {
+    console.error('Create POI error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.get('/api/pois/approved', async (req, res) => {
+  try {
+    const pois = await getApprovedPOIs(db);
+    res.json({ success: true, pois });
+  } catch (err) {
+    console.error('Get approved POIs error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.get('/api/pois/user', authMiddleware, async (req, res) => {
+  try {
+    const pois = await getUserPOIs(db, req.userId);
+    res.json({ success: true, pois });
+  } catch (err) {
+    console.error('Get user POIs error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.get('/api/pois/:id', async (req, res) => {
+  try {
+    const poi = await getPOI(db, req.params.id);
+    if (!poi) {
+      return res.status(404).json({ success: false, message: 'POI not found' });
+    }
+    res.json({ success: true, poi });
+  } catch (err) {
+    console.error('Get POI error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.put('/api/pois/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await updatePOI(db, req.params.id, req.userId, req.body);
+    res.status(result.success ? 200 : 400).json(result);
+  } catch (err) {
+    console.error('Update POI error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.delete('/api/pois/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await deletePOI(db, req.params.id, req.userId);
+    res.status(result.success ? 200 : 400).json(result);
+  } catch (err) {
+    console.error('Delete POI error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// ============ TOURS ENDPOINTS ============
+
+app.post('/api/tours', authMiddleware, async (req, res) => {
+  try {
+    const result = await createTour(db, req.userId, req.body);
+    res.status(result.success ? 201 : 400).json(result);
+  } catch (err) {
+    console.error('Create tour error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.get('/api/tours', async (req, res) => {
+  try {
+    const tours = await getAllTours(db);
+    res.json({ success: true, tours });
+  } catch (err) {
+    console.error('Get all tours error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.get('/api/tours/user', authMiddleware, async (req, res) => {
+  try {
+    const tours = await getUserTours(db, req.userId);
+    res.json({ success: true, tours });
+  } catch (err) {
+    console.error('Get user tours error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.get('/api/tours/:id', async (req, res) => {
+  try {
+    const tour = await getTour(db, req.params.id);
+    if (!tour) {
+      return res.status(404).json({ success: false, message: 'Tour not found' });
+    }
+    res.json({ success: true, tour });
+  } catch (err) {
+    console.error('Get tour error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.put('/api/tours/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await updateTour(db, req.params.id, req.userId, req.body);
+    res.status(result.success ? 200 : 400).json(result);
+  } catch (err) {
+    console.error('Update tour error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.delete('/api/tours/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await deleteTour(db, req.params.id, req.userId);
+    res.status(result.success ? 200 : 400).json(result);
+  } catch (err) {
+    console.error('Delete tour error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// ============ REVIEWS ENDPOINTS ============
+
+app.post('/api/reviews', authMiddleware, async (req, res) => {
+  try {
+    const result = await createReview(db, req.userId, req.body);
+    res.status(result.success ? 201 : 400).json(result);
+  } catch (err) {
+    console.error('Create review error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.get('/api/reviews/track/:trackId', async (req, res) => {
+  try {
+    const reviews = await getTrackReviews(db, req.params.trackId);
+    res.json({ success: true, reviews });
+  } catch (err) {
+    console.error('Get track reviews error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.get('/api/reviews/user', authMiddleware, async (req, res) => {
+  try {
+    const reviews = await getUserReviews(db, req.userId);
+    res.json({ success: true, reviews });
+  } catch (err) {
+    console.error('Get user reviews error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.get('/api/reviews/:id', async (req, res) => {
+  try {
+    const review = await getReview(db, req.params.id);
+    if (!review) {
+      return res.status(404).json({ success: false, message: 'Review not found' });
+    }
+    res.json({ success: true, review });
+  } catch (err) {
+    console.error('Get review error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.put('/api/reviews/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await updateReview(db, req.params.id, req.userId, req.body);
+    res.status(result.success ? 200 : 400).json(result);
+  } catch (err) {
+    console.error('Update review error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.delete('/api/reviews/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await deleteReview(db, req.params.id, req.userId);
+    res.status(result.success ? 200 : 400).json(result);
+  } catch (err) {
+    console.error('Delete review error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { register } from '../services/authService';
+import { registerViaBackend } from '../services/backendAuth';
 
 interface RegisterFormProps {
     onSuccess: () => void;
@@ -15,24 +15,29 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setIsLoading(true);
 
         // Validation
         if (!email || !username || !firstName || !lastName || !birthDate || !password) {
             setError('Tutti i campi sono obbligatori');
+            setIsLoading(false);
             return;
         }
 
         if (password.length < 6) {
             setError('La password deve contenere almeno 6 caratteri');
+            setIsLoading(false);
             return;
         }
 
         if (password !== confirmPassword) {
             setError('Le password non corrispondono');
+            setIsLoading(false);
             return;
         }
 
@@ -42,29 +47,25 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
         const age = today.getFullYear() - birth.getFullYear();
         if (age < 13) {
             setError('Devi avere almeno 13 anni per registrarti');
+            setIsLoading(false);
             return;
         }
 
         try {
-            // Register
-            const result = await register({
-                email,
-                username,
-                firstName,
-                lastName,
-                birthDate,
-                password
-            });
+            // Register via backend
+            const result = await registerViaBackend(email, username, password, firstName, lastName, birthDate);
 
             if (result.success) {
                 // Redirect to login page with success message
                 onSuccess();
             } else {
-                setError(result.message);
+                setError(result.message || 'Errore durante la registrazione');
             }
         } catch (err) {
             setError('Errore durante la registrazione. Riprova più tardi.');
             console.error('Registration error:', err);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -167,8 +168,8 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
                         />
                     </div>
 
-                    <button type="submit" className="btn-submit" style={{ width: '100%', marginTop: '8px' }}>
-                        🚀 Registrati
+                    <button type="submit" className="btn-submit" style={{ width: '100%', marginTop: '8px' }} disabled={isLoading}>
+                        {isLoading ? '⏳ Registrazione in corso...' : '🚀 Registrati'}
                     </button>
                 </form>
 
