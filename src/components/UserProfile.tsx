@@ -60,8 +60,16 @@ export default function UserProfile({ onClose }: UserProfileProps) {
         // Fetch user from backend
         const fetchUser = async () => {
             try {
+                console.log('[UserProfile] Fetching user from backend...');
+                console.log('[UserProfile] API Base URL:', process.env.REACT_APP_API_BASE);
+                console.log('[UserProfile] Access Token:', localStorage.getItem('accessToken') ? 'Present' : 'Missing');
+                console.log('[UserProfile] Local User:', localStorage.getItem('singletrack_current_user') ? 'Present' : 'Missing');
+                
                 const user = await getCurrentUserFromBackend();
+                console.log('[UserProfile] Backend response:', user);
+                
                 if (user) {
+                    console.log('[UserProfile] User loaded successfully:', user.username);
                     setCurrentUser(user);
                     setFormData({
                         firstName: user.firstName || '',
@@ -76,9 +84,11 @@ export default function UserProfile({ onClose }: UserProfileProps) {
                         strava: user.socialLinks?.strava || ''
                     });
                     setProfilePhotoPreview(user.profilePhoto || '');
+                } else {
+                    console.warn('[UserProfile] No user returned from backend');
                 }
             } catch (err) {
-                console.error('Error fetching user:', err);
+                console.error('[UserProfile] Error fetching user:', err);
             }
         };
         fetchUser();
@@ -191,7 +201,16 @@ export default function UserProfile({ onClose }: UserProfileProps) {
                     <h3>👤 Profilo Utente</h3>
                     <button className="close-btn" onClick={onClose}>×</button>
                 </div>
-                <p>Nessun utente connesso</p>
+                <div style={{ padding: '20px' }}>
+                    <p>Nessun utente connesso</p>
+                    <div style={{ fontSize: '12px', color: '#666', marginTop: '10px' }}>
+                        <p>Debug Info:</p>
+                        <p>• API Base: {process.env.REACT_APP_API_BASE || 'undefined'}</p>
+                        <p>• Access Token: {localStorage.getItem('accessToken') ? 'Present' : 'Missing'}</p>
+                        <p>• Local User: {localStorage.getItem('singletrack_current_user') ? 'Present' : 'Missing'}</p>
+                        <p>• Check console for more details</p>
+                    </div>
+                </div>
             </div>
         );
     }
