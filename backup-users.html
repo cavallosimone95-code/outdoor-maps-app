@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backup Utenti - Outdoor Maps App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .icon {
+            font-size: 20px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-danger {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #ff5252;
+        }
+
+        .status {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .status.info {
+            background: #e7f3ff;
+            color: #0066cc;
+            border-left: 4px solid #0066cc;
+        }
+
+        .status.success {
+            background: #e6ffed;
+            color: #00aa00;
+            border-left: 4px solid #00aa00;
+        }
+
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+
+        .status.error {
+            background: #ffe6e6;
+            color: #cc0000;
+            border-left: 4px solid #ff0000;
+        }
+
+        .user-list {
+            background: #f8f8f8;
+            border-radius: 8px;
+            padding: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+
+        .user-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .user-item:last-child {
+            border-bottom: none;
+        }
+
+        .user-email {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .user-meta {
+            font-size: 12px;
+            color: #999;
+            margin-top: 2px;
+        }
+
+        .user-admin {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            resize: none;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        @media (max-width: 480px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .info-box {
+            background: #f0f7ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 13px;
+            color: #004085;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💾 Backup Utenti</h1>
+        <p class="subtitle">Estrai e sincronizza i dati degli utenti da localStorage all'app online</p>
+
+        <!-- Step 1: Export -->
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">1️⃣</span>
+                <span>Estrai dati da localStorage</span>
+            </div>
+            <button class="btn-primary" onclick="exportUsers()">
+                📥 Estrai utenti da localStorage
+            </button>
+            <div id="exportStatus"></div>
+            <div id="userListContainer" style="display:none;">
+                <div class="user-list" id="userList"></div>
+                <div class="status info" id="exportInfo"></div>
+            </div>
+        </div>
+
+        <!-- Step 2: Review & Download -->
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">2️⃣</span>
+                <span>Scarica il backup</span>
+            </div>
+            <button class="btn-secondary" id="downloadBtn" onclick="downloadBackup()" style="display:none;">
+                📄 Scarica backup.json
+            </button>
+            <div id="downloadStatus"></div>
+        </div>
+
+        <!-- Step 3: Upload to Backend -->
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">3️⃣</span>
+                <span>Sincronizza con backend</span>
+            </div>
+            <input type="file" id="fileInput" accept=".json" style="display:none;">
+            <button class="btn-primary" onclick="document.getElementById('fileInput').click()">
+                📤 Carica file JSON
+            </button>
+            <input type="text" id="tokenInput" placeholder="Inserisci token di migrazione" 
+                   style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px;">
+            <button class="btn-primary" id="syncBtn" onclick="syncToBackend()" style="display:none; margin-top: 10px;">
+                🚀 Sincronizza
+            </button>
+            <div id="syncStatus"></div>
+        </div>
+
+        <!-- Step 4: Cleanup -->
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">4️⃣</span>
+                <span>Pulizia</span>
+            </div>
+            <button class="btn-danger" onclick="clearLocalStorage()">
+                🗑️ Cancella localStorage locale
+            </button>
+            <div class="info-box">
+                ℹ️ Cancella i dati locali solo dopo aver completato la sincronizzazione!
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let exportedUsers = null;
+        let selectedFile = null;
+
+        // Export users from localStorage
+        async function exportUsers() {
+            try {
+                const status = document.getElementById('exportStatus');
+                status.innerHTML = '<div class="status info"><span class="loader"></span>Estrazione in corso...</div>';
+
+                // Get all users from localStorage
+                const usersKey = 'users'; // or whatever key you use
+                const usersData = localStorage.getItem(usersKey);
+                
+                if (!usersData) {
+                    status.innerHTML = '<div class="status warning">⚠️ Nessun utente trovato in localStorage</div>';
+                    return;
+                }
+
+                exportedUsers = JSON.parse(usersData);
+                if (!Array.isArray(exportedUsers)) {
+                    exportedUsers = [exportedUsers];
+                }
+
+                // Display users
+                const userListHtml = exportedUsers.map((user, idx) => `
+                    <div class="user-item">
+                        <div class="user-email">
+                            ${user.email}
+                            ${user.isAdmin ? '<span class="user-admin">ADMIN</span>' : ''}
+                        </div>
+                        <div class="user-meta">
+                            Username: ${user.username || 'N/A'} | Creato: ${user.createdAt ? new Date(user.createdAt).toLocaleDateString('it-IT') : 'N/A'}
+                        </div>
+                    </div>
+                `).join('');
+
+                document.getElementById('userList').innerHTML = userListHtml;
+                document.getElementById('userListContainer').style.display = 'block';
+                document.getElementById('downloadBtn').style.display = 'block';
+
+                status.innerHTML = `<div class="status success">✅ ${exportedUsers.length} utente/i estratti con successo!</div>`;
+                document.getElementById('exportInfo').innerHTML = `
+                    Pronti per il download. Clicca sul pulsante sottostante per scaricare il file JSON.
+                `;
+            } catch (error) {
+                document.getElementById('exportStatus').innerHTML = 
+                    `<div class="status error">❌ Errore: ${error.message}</div>`;
+            }
+        }
+
+        // Download backup
+        function downloadBackup() {
+            if (!exportedUsers) {
+                alert('Nessun dato da scaricare');
+                return;
+            }
+
+            const dataStr = JSON.stringify(exportedUsers, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `backup-users-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+
+            document.getElementById('downloadStatus').innerHTML = 
+                '<div class="status success">✅ File scaricato! Ora puoi caricarlo sull\'app online.</div>';
+        }
+
+        // Handle file selection
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            selectedFile = e.target.files[0];
+            if (selectedFile) {
+                document.getElementById('syncBtn').style.display = 'block';
+            }
+        });
+
+        // Sync to backend
+        async function syncToBackend() {
+            try {
+                const token = document.getElementById('tokenInput').value;
+                if (!token) {
+                    alert('Inserisci il token di migrazione');
+                    return;
+                }
+
+                if (!selectedFile) {
+                    alert('Carica un file JSON prima');
+                    return;
+                }
+
+                const syncStatus = document.getElementById('syncStatus');
+                syncStatus.innerHTML = '<div class="status info"><span class="loader"></span>Sincronizzazione in corso...</div>';
+
+                // Read file
+                const fileContent = await selectedFile.text();
+                const users = JSON.parse(fileContent);
+
+                // Send to backend
+                const response = await fetch(`${getBackendUrl()}/api/migrate/users-from-localstorage`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Migration-Token': token
+                    },
+                    body: JSON.stringify(users)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    syncStatus.innerHTML = `
+                        <div class="status success">
+                            ✅ Sincronizzazione completata!<br>
+                            Utenti migrati: ${result.migrated} | Saltati: ${result.skipped}
+                        </div>
+                    `;
+                    document.getElementById('tokenInput').value = '';
+                } else {
+                    syncStatus.innerHTML = `
+                        <div class="status error">
+                            ❌ Errore: ${result.message || 'Errore sconosciuto'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('syncStatus').innerHTML = 
+                    `<div class="status error">❌ Errore: ${error.message}</div>`;
+            }
+        }
+
+        // Clear localStorage
+        function clearLocalStorage() {
+            if (confirm('Sei sicuro di voler cancellare i dati locali? Questa azione non può essere annullata!')) {
+                try {
+                    localStorage.removeItem('users');
+                    localStorage.removeItem('currentUser');
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
+                    document.getElementById('syncStatus').innerHTML = 
+                        '<div class="status success">✅ Dati locali cancellati con successo!</div>';
+                } catch (error) {
+                    alert('Errore durante la cancellazione: ' + error.message);
+                }
+            }
+        }
+
+        // Helper to get backend URL
+        function getBackendUrl() {
+            // Try to get from current window
+            const currentUrl = window.location.href;
+            if (currentUrl.includes('localhost')) {
+                return 'http://localhost:3001';
+            } else if (currentUrl.includes('vercel.app')) {
+                return 'https://singletrack-backend.onrender.com';
+            }
+            return 'https://singletrack-backend.onrender.com'; // default
+        }
+
+        // Load exported users on page load if available
+        window.addEventListener('load', () => {
+            const usersData = localStorage.getItem('users');
+            if (usersData) {
+                exportUsers();
+            }
+        });
+    </script>
+</body>
+</html>
