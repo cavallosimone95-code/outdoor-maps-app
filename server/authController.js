@@ -34,7 +34,8 @@ export async function login(db, email, password) {
     return { success: false, message: `Your account has been banned. Reason: ${user.bannedReason || 'No reason provided'}` };
   }
 
-  if (!user.approved && (user.role === 'free' || user.role === 'plus')) {
+  // Admin users don't need approval
+  if (user.role !== 'admin' && !user.approved && (user.role === 'free' || user.role === 'plus')) {
     return { success: false, message: 'Your account is pending approval' };
   }
 

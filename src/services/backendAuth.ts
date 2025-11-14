@@ -67,9 +67,11 @@ export async function loginViaBackend(email: string, password: string): Promise<
 
     const data = await response.json();
 
-    if (data.success && data.accessToken && data.refreshToken) {
+    if (data.success && data.accessToken && data.refreshToken && data.user) {
       setAccessToken(data.accessToken);
       setRefreshToken(data.refreshToken);
+      // Save current user to localStorage for UI access
+      localStorage.setItem('singletrack_current_user', JSON.stringify(data.user));
     }
 
     return data;
