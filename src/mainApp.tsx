@@ -34,6 +34,33 @@ export default function MainApp() {
     // Initialize default developer account and migrate users to new password system
     initializeDefaultAccounts();
     
+    // Check authentication from both localStorage and backend
+    const checkAuthentication = async () => {
+      // First check localStorage
+      if (isAuthenticated()) {
+        setAuthenticated(true);
+      } else {
+        // If not authenticated locally, try to get user from backend
+        try {
+          const { getCurrentUserFromBackend } = await import('./services/backendAuth');
+          const user = await getCurrentUserFromBackend();
+          if (user) {
+            // User is authenticated via backend, save to localStorage
+            localStorage.setItem('singletrack_current_user', JSON.stringify(user));
+            setAuthenticated(true);
+            return;
+          }
+        } catch (error) {
+          console.warn('Backend authentication check failed:', error);
+        }
+        
+        // Not authenticated
+        setAuthenticated(false);
+      }
+    };
+    
+    checkAuthentication();
+
     // Try to restore from IndexedDB backup if localStorage is empty
     (async () => {
       const localTracks = localStorage.getItem('singletrack_tracks');
@@ -88,10 +115,6 @@ export default function MainApp() {
     } catch (e) {
       console.warn('[Auth] Migration failed:', e);
     }
-    
-    setAuthenticated(isAuthenticated());
-
-    // Populate missing tour start coordinates (runs silently, once per session)
     (async () => {
       try {
         const updated = await populateStartCoordsFromGPX();
