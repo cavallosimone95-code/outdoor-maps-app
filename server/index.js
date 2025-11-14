@@ -704,6 +704,23 @@ app.get('/api/admin/users/all', adminAuthMiddleware(), async (req, res) => {
   }
 });
 
+// DEBUG: Simple debug endpoint (TEMPORARY)
+app.get('/api/debug/users', async (req, res) => {
+  try {
+    const db = getDatabase();
+    if (!db) {
+      return res.json({ error: 'Database not available' });
+    }
+    
+    const stmt = db.prepare('SELECT id, email, role FROM users LIMIT 5');
+    const users = stmt.all();
+    
+    res.json({ users, count: users.length, dbAvailable: !!db });
+  } catch (err) {
+    res.json({ error: err.message });
+  }
+});
+
 // ============ SERVER STARTUP ============
 
 async function startServer() {

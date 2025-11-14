@@ -59,53 +59,37 @@ export function optionalAuthMiddleware(req, res, next) {
   next();
 }
 
-// Admin middleware that loads full user object
+// Admin middleware that checks JWT and verifies admin role from database
 export function adminAuthMiddleware() {
   return async (req, res, next) => {
-    console.log('[ADMIN_AUTH] Starting admin auth middleware');
-    
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('[ADMIN_AUTH] No authorization header');
       return res.status(401).json({ success: false, message: 'No token provided' });
     }
 
     const token = authHeader.substring(7);
-    console.log('[ADMIN_AUTH] Token extracted:', token.substring(0, 50) + '...');
-    
     const decoded = verifyAccessToken(token);
 
     if (!decoded) {
-      console.log('[ADMIN_AUTH] Token verification failed');
       return res.status(401).json({ success: false, message: 'Invalid or expired token' });
     }
-
-    console.log('[ADMIN_AUTH] Token decoded, userId:', decoded.userId);
 
     try {
       // Get database instance
       const db = getDatabase();
       
-      // Check if database is available
       if (!db) {
-        console.error('[ADMIN_AUTH] Database is not available');
         return res.status(500).json({ success: false, message: 'Database not available' });
       }
 
-      console.log('[ADMIN_AUTH] Database available, querying user...');
-      
       // Load full user object from database
       const stmt = db.prepare('SELECT * FROM users WHERE id = ?');
       const user = stmt.get(decoded.userId);
       
-      console.log('[ADMIN_AUTH] User query result:', user ? 'found' : 'not found');
-      
       if (!user) {
         return res.status(401).json({ success: false, message: 'User not found' });
       }
-      
-      console.log('[ADMIN_AUTH] User role:', user.role);
       
       if (user.role !== 'admin') {
         return res.status(403).json({ success: false, message: 'Admin access required' });
@@ -113,10 +97,9 @@ export function adminAuthMiddleware() {
       
       req.userId = decoded.userId;
       req.user = user;
-      console.log('[ADMIN_AUTH] Success, proceeding to endpoint');
       next();
     } catch (err) {
-      console.error('[ADMIN_AUTH] Admin auth middleware error:', err);
+      console.error('Admin auth middleware error:', err);
       return res.status(500).json({ success: false, message: 'Authentication error', debug: err.message });
     }
   };
