@@ -533,34 +533,40 @@ app.get('/api/health', (req, res) => {
 
 async function initializeAdminIfNeeded(database) {
   try {
-    // Check if admin exists
-    const { getAsync } = await import('./db.js');
-    const adminExists = await getAsync(database, 'SELECT * FROM users WHERE email = ?', ['admin@singletrack.app']);
+    console.log('🔐 Checking for admin user...');
+    
+    // Check if admin exists (using synchronous API for in-memory DB)
+    const stmt = database.prepare('SELECT * FROM users WHERE email = ?');
+    const adminExists = stmt.get('admin@singletrack.app');
     
     if (adminExists) {
-      return; // Admin already exists
+      console.log('✅ Admin user already exists');
+      return;
     }
 
+    console.log('🆕 Creating admin user...');
+    
     // Create admin user
     const passwordHash = await bcryptjs.hash('admin123', 10);
     const userId = uuidv4();
     const now = new Date().toISOString();
 
-    await runAsync(database,
-      `INSERT INTO users (
+    const insertStmt = database.prepare(`
+      INSERT INTO users (
         id, email, username, passwordHash, firstName, lastName, 
         birthDate, role, approved, isBanned, profilePhoto, bio, 
         location, phone, website, instagram, facebook, strava,
         createdAt, updatedAt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        userId, 'admin@singletrack.app', 'admin', passwordHash,
-        'Admin', 'User', '',
-        'admin', 1, 0,
-        '', '', '',
-        '', '', '',
-        '', '', now, now
-      ]
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    insertStmt.run(
+      userId, 'admin@singletrack.app', 'admin', passwordHash,
+      'Admin', 'User', '',
+      'admin', 1, 0,
+      '', '', '',
+      '', '', '',
+      '', '', now, now
     );
 
     console.log('✅ Admin account initialized: admin@singletrack.app / admin123');
