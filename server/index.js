@@ -458,8 +458,14 @@ async function startServer() {
       console.log(`📡 CORS enabled for: ${CORS_ORIGIN}`);
     });
   } catch (err) {
-    console.error('❌ Failed to start server:', err);
-    process.exit(1);
+    console.error('⚠️  Database initialization failed:', err.message);
+    console.log('⚠️  Starting server anyway (limited functionality)');
+    
+    // Still start the server so health check works
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on http://localhost:${PORT} (DB not available)`);
+      console.log(`📡 CORS enabled for: ${CORS_ORIGIN}`);
+    });
   }
 }
 

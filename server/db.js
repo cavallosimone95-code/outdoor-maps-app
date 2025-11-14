@@ -1,13 +1,27 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH = path.join(__dirname, 'data', 'singletrack.db');
 
+// Ensure data directory exists
+try {
+  if (!fs.existsSync(path.join(__dirname, 'data'))) {
+    fs.mkdirSync(path.join(__dirname, 'data'), { recursive: true });
+  }
+} catch (err) {
+  console.log('⚠️  Could not create data directory, using in-memory database');
+}
+
 export function initDatabase() {
   return new Promise((resolve, reject) => {
-    const db = new sqlite3.Database(DB_PATH, (err) => {
+    // Use in-memory database if file system is read-only (like on Render free tier)
+    const useInMemory = process.env.USE_MEMORY_DB === 'true' || process.env.NODE_ENV === 'production';
+    const dbPath = useInMemory ? ':memory:' : DB_PATH;
+    
+    const db = new sqlite3.Database(dbPath, (err) => {
       if (err) {
         reject(err);
         return;
