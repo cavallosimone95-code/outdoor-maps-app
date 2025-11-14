@@ -29,6 +29,15 @@ import {
     deleteUser,
     User 
 } from '../services/authService';
+import { 
+    getPendingUsersFromBackend,
+    getApprovedUsersFromBackend,
+    approveUserViaBackend,
+    rejectUserViaBackend,
+    changeUserRoleViaBackend,
+    testUserManagementEndpoints,
+    BackendUser
+} from '../services/userManagementService';
 
 export const ApprovalPanel: React.FC = () => {
     const [pendingTracks, setPendingTracks] = useState<PendingTrack[]>([]);
@@ -40,21 +49,49 @@ export const ApprovalPanel: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'users' | 'tracks' | 'pois' | 'updates' | 'approved-users' | 'developers' | 'banned-users'>('users');
     const [previewingTrackId, setPreviewingTrackId] = useState<string | null>(null);
     const [pendingUpdates, setPendingUpdates] = useState<PendingTrackUpdate[]>([]);
+    
+    // Backend user management state
+    const [backendPendingUsers, setBackendPendingUsers] = useState<BackendUser[]>([]);
+    const [backendApprovedUsers, setBackendApprovedUsers] = useState<BackendUser[]>([]);
+    const [useBackendUserManagement, setUseBackendUserManagement] = useState<boolean>(false);
 
     useEffect(() => {
         loadPendingContent();
     }, []);
 
-    const loadPendingContent = () => {
+    const loadPendingContent = async () => {
+        // Load tracks and POIs (always from localStorage for now)
         setPendingTracks(getPendingTracks());
         setPendingPOIs(getPendingPOIs());
-        setPendingUsers(getPendingUsers());
-        setApprovedUsers(getApprovedUsers());
-        setDevelopers(getDevelopers());
         setPendingUpdates(getPendingTrackUpdates());
         
-        // Load banned users
-        setBannedUsers(getBannedUsers());
+        // Test if backend user management is available
+        const backendAvailable = await testUserManagementEndpoints();
+        console.log('[ApprovalPanel] Backend user management available:', backendAvailable);
+        
+        if (backendAvailable) {
+            setUseBackendUserManagement(true);
+            // Load users from backend
+            const pendingFromBackend = await getPendingUsersFromBackend();
+            const approvedFromBackend = await getApprovedUsersFromBackend();
+            
+            setBackendPendingUsers(pendingFromBackend);
+            setBackendApprovedUsers(approvedFromBackend);
+            
+            console.log('[ApprovalPanel] Loaded from backend:', {
+                pending: pendingFromBackend.length,
+                approved: approvedFromBackend.length
+            });
+        } else {
+            setUseBackendUserManagement(false);
+            // Fallback to localStorage
+            setPendingUsers(getPendingUsers());
+            setApprovedUsers(getApprovedUsers());
+            setDevelopers(getDevelopers());
+            setBannedUsers(getBannedUsers());
+            
+            console.log('[ApprovalPanel] Using localStorage fallback for users');
+        }
     };
 
     const handleApproveTrack = (trackId: string) => {
@@ -106,15 +143,37 @@ export const ApprovalPanel: React.FC = () => {
         loadPendingContent();
     };
 
-    const handleApproveUser = (userId: string) => {
-        if (window.confirm('Approvare questo utente? Potrà accedere all\'app.')) {
+    const handleApproveUser = async (userId: string) => {
+        if (!window.confirm('Approvare questo utente? Potrà accedere all\'app.')) return;
+        
+        if (useBackendUserManagement) {
+            const result = await approveUserViaBackend(userId);
+            if (result.success) {
+                alert('Utente approvato con successo!');
+                loadPendingContent(); // Refresh the lists
+            } else {
+                alert(`Errore: ${result.message}`);
+            }
+        } else {
+            // localStorage fallback
             approveUser(userId);
             loadPendingContent();
         }
     };
 
-    const handleRejectUser = (userId: string) => {
-        if (window.confirm('Rifiutare questo utente? Il suo account sarà eliminato definitivamente.')) {
+    const handleRejectUser = async (userId: string) => {
+        if (!window.confirm('Rifiutare questo utente? Il suo account sarà eliminato definitivamente.')) return;
+        
+        if (useBackendUserManagement) {
+            const result = await rejectUserViaBackend(userId);
+            if (result.success) {
+                alert('Utente rifiutato/eliminato con successo!');
+                loadPendingContent(); // Refresh the lists
+            } else {
+                alert(`Errore: ${result.message}`);
+            }
+        } else {
+            // localStorage fallback
             rejectUser(userId);
             loadPendingContent();
         }
@@ -330,12 +389,26 @@ export const ApprovalPanel: React.FC = () => {
 
             {activeTab === 'users' && (
                 <div>
-                    {pendingUsers.length === 0 ? (
+                    {useBackendUserManagement && (
+                        <div style={{ 
+                            background: '#e8f5e8', 
+                            padding: '12px', 
+                            borderRadius: '8px', 
+                            marginBottom: '16px',
+                            fontSize: '14px',
+                            color: '#2d5a2d'
+                        }}>
+                            🌐 <strong>Backend User Management Active</strong><br/>
+                            Gli utenti sono gestiti tramite database backend. {backendPendingUsers.length} in attesa di approvazione.
+                        </div>
+                    )}
+                    
+                    {(!useBackendUserManagement && pendingUsers.length === 0) || (useBackendUserManagement && backendPendingUsers.length === 0) ? (
                         <p style={{ color: '#999', textAlign: 'center', padding: '40px' }}>
                             ✓ Nessun utente in attesa di approvazione
                         </p>
                     ) : (
-                        pendingUsers.map(user => (
+                        (useBackendUserManagement ? backendPendingUsers : pendingUsers).map(user => (
                             <div
                                 key={user.id}
                                 style={{
@@ -371,6 +444,13 @@ export const ApprovalPanel: React.FC = () => {
                                             ✉️ Email: <strong>{user.email}</strong>
                                         </p>
                                         <p style={{ 
+                                            margin: '0 0 4px 0', 
+                                            color: '#666',
+                                            fontSize: '0.9em'
+                                        }}>
+                                            🎯 Ruolo: <strong>{user.role}</strong>
+                                        </p>
+                                        <p style={{ 
                                             margin: '0', 
                                             color: '#999',
                                             fontSize: '0.85em'
@@ -392,16 +472,18 @@ export const ApprovalPanel: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div style={{ 
-                                    padding: '8px',
-                                    background: 'white',
-                                    borderRadius: '4px',
-                                    fontSize: '0.85em',
-                                    color: '#555',
-                                    marginBottom: '12px'
-                                }}>
-                                    <strong>Data di nascita:</strong> {new Date(user.birthDate).toLocaleDateString('it-IT')}
-                                </div>
+                                {('birthDate' in user) && (
+                                    <div style={{ 
+                                        padding: '8px',
+                                        background: 'white',
+                                        borderRadius: '4px',
+                                        fontSize: '0.85em',
+                                        color: '#555',
+                                        marginBottom: '12px'
+                                    }}>
+                                        <strong>Data di nascita:</strong> {new Date((user as User).birthDate).toLocaleDateString('it-IT')}
+                                    </div>
+                                )}
 
                                 <div style={{ 
                                     display: 'flex', 
