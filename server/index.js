@@ -718,12 +718,25 @@ app.get('/api/debug/users', async (req, res) => {
       return res.json({ error: 'Database not available' });
     }
     
-    const stmt = db.prepare('SELECT id, email, role FROM users LIMIT 5');
-    const users = stmt.all();
+    // Test multiple queries
+    const countStmt = db.prepare('SELECT COUNT(*) as count FROM users');
+    const countResult = countStmt.get();
     
-    res.json({ users, count: users.length, dbAvailable: !!db });
+    const allStmt = db.prepare('SELECT id, email, role FROM users');
+    const users = allStmt.all();
+    
+    const tablesStmt = db.prepare("SELECT name FROM sqlite_master WHERE type='table'");
+    const tables = tablesStmt.all();
+    
+    res.json({ 
+      users, 
+      count: users.length,
+      totalCount: countResult.count,
+      tables: tables.map(t => t.name),
+      dbAvailable: !!db 
+    });
   } catch (err) {
-    res.json({ error: err.message });
+    res.json({ error: err.message, stack: err.stack });
   }
 });
 
