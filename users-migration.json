@@ -1,0 +1,9 @@
+[
+  {
+    "email": "admin@singletrack.app",
+    "password": "admin123",
+    "username": "admin",
+    "isAdmin": true,
+    "createdAt": "2025-11-14T00:00:00Z"
+  }
+]
