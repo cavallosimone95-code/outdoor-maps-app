@@ -2,7 +2,17 @@ import axios from 'axios';
 import type { FeatureCollection } from 'geojson';
 import type { POI } from '../types';
 
-const API_BASE = process.env.REACT_APP_API_BASE || '';
+// Use same API detection logic as apiConfig.ts
+const getApiBaseUrl = () => {
+  // Force production API in production environment
+  if (window.location.hostname.includes('vercel.app') || window.location.hostname.includes('outdoor-maps-app')) {
+    return 'https://singletrack-backend.onrender.com';
+  }
+  // Use environment variable for local development
+  return process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+};
+
+const API_BASE = getApiBaseUrl();
 
 export async function fetchMapData(): Promise<FeatureCollection | null> {
   // try remote endpoint, fallback to small embedded sample trails GeoJSON

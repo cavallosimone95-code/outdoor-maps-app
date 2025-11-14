@@ -17,13 +17,28 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const CORS_ORIGIN = process.env.CORS_ORIGIN?.split(',') || 'http://localhost:3000';
+
+// CORS origins - support both local development and production
+const corsOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001', 
+  'https://outdoor-maps-app.vercel.app',
+  'https://outdoor-maps-app-gzvf.vercel.app' // Include all vercel subdomains
+];
+
+// Add any custom CORS origins from environment
+const CORS_ORIGIN = process.env.CORS_ORIGIN;
+if (CORS_ORIGIN) {
+  corsOrigins.push(...CORS_ORIGIN.split(','));
+}
+
+console.log('[CORS] Allowed origins:', corsOrigins);
 
 // Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(cors({
-  origin: CORS_ORIGIN,
+  origin: corsOrigins,
   credentials: true
 }));
 
