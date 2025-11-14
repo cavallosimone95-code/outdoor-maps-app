@@ -3,7 +3,15 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { initDatabase, getDatabase, runAsync } from './db.js';
-import { authMiddleware, optionalAuthMiddleware } from './middleware.js';
+import { 
+  generateAccessToken, 
+  generateRefreshToken, 
+  verifyAccessToken, 
+  verifyRefreshToken, 
+  authMiddleware, 
+  optionalAuthMiddleware,
+  adminAuthMiddleware 
+} from './middleware.js';
 import { register, login, refreshAccessToken, changePassword, getCurrentUser, updateUserProfile } from './authController.js';
 import { createTrack, getTrack, getApprovedTracks, getUserTracks, updateTrack, deleteTrack, getPendingTracks, approveTrack, rejectTrack } from './trackController.js';
 import { createPOI, getPOI, getApprovedPOIs, getUserPOIs, updatePOI, deletePOI, getPendingPOIs, approvePOI, rejectPOI } from './poiController.js';
@@ -564,12 +572,8 @@ async function initializeAdminIfNeeded(database) {
 // ============ USER MANAGEMENT ENDPOINTS (ADMIN ONLY) ============
 
 // Get all pending users (need approval)
-app.get('/api/admin/users/pending', authMiddleware, async (req, res) => {
+app.get('/api/admin/users/pending', adminAuthMiddleware(db), async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Admin access required' });
-    }
-    
     const stmt = db.prepare(`
       SELECT id, email, username, firstName, lastName, role, approved, createdAt 
       FROM users 
@@ -584,11 +588,8 @@ app.get('/api/admin/users/pending', authMiddleware, async (req, res) => {
 });
 
 // Get all approved users
-app.get('/api/admin/users/approved', authMiddleware, async (req, res) => {
+app.get('/api/admin/users/approved', adminAuthMiddleware(db), async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Admin access required' });
-    }
     
     const stmt = db.prepare(`
       SELECT id, email, username, firstName, lastName, role, approved, createdAt 
@@ -604,12 +605,8 @@ app.get('/api/admin/users/approved', authMiddleware, async (req, res) => {
 });
 
 // Approve user
-app.put('/api/admin/users/:id/approve', authMiddleware, async (req, res) => {
+app.put('/api/admin/users/:id/approve', adminAuthMiddleware(db), async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Admin access required' });
-    }
-    
     const { id } = req.params;
     const stmt = db.prepare('UPDATE users SET approved = 1 WHERE id = ?');
     const result = stmt.run(id);
@@ -626,12 +623,8 @@ app.put('/api/admin/users/:id/approve', authMiddleware, async (req, res) => {
 });
 
 // Reject/delete user
-app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
+app.delete('/api/admin/users/:id', adminAuthMiddleware(db), async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Admin access required' });
-    }
-    
     const { id } = req.params;
     
     // Protect admin accounts
@@ -661,12 +654,8 @@ app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
 });
 
 // Change user role
-app.put('/api/admin/users/:id/role', authMiddleware, async (req, res) => {
+app.put('/api/admin/users/:id/role', adminAuthMiddleware(db), async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Admin access required' });
-    }
-    
     const { id } = req.params;
     const { role } = req.body;
     
@@ -690,12 +679,8 @@ app.put('/api/admin/users/:id/role', authMiddleware, async (req, res) => {
 });
 
 // DEBUG: Get all users (temporary - remove in production)
-app.get('/api/admin/users/all', authMiddleware, async (req, res) => {
+app.get('/api/admin/users/all', adminAuthMiddleware(db), async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Admin access required' });
-    }
-    
     console.log('[DEBUG] Database object:', !!db);
     console.log('[DEBUG] User role:', req.user.role);
     

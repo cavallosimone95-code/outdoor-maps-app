@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug User State</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #2c3e50; color: #ecf0f1; }
+        .section { margin-bottom: 20px; padding: 15px; background: #34495e; border-radius: 5px; }
+        .key { color: #3498db; font-weight: bold; }
+        .value { color: #e74c3c; }
+        pre { background: #1a1a1a; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        button { background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #2ecc71; }
+        .admin { color: #f39c12; font-weight: bold; }
+        .role { background: #8e44ad; color: white; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug User State & LocalStorage</h1>
+    
+    <div class="section">
+        <h3>Current User in localStorage</h3>
+        <div id="currentUser"></div>
+    </div>
+    
+    <div class="section">
+        <h3>Auth Service Functions Test</h3>
+        <div id="authFunctions"></div>
+    </div>
+    
+    <div class="section">
+        <h3>All localStorage Keys</h3>
+        <div id="allKeys"></div>
+    </div>
+    
+    <div class="section">
+        <h3>🛠️ Utilities</h3>
+        <button onclick="fixUserRole()">🔧 Fix User Role to 'admin'</button>
+        <button onclick="clearAuth()">🧹 Clear All Auth Data</button>
+        <button onclick="refreshPage()">🔄 Refresh Page</button>
+        <button onclick="testBackendAuth()">🌐 Test Backend Auth</button>
+    </div>
+    
+    <div class="section">
+        <h3>Real-time Updates</h3>
+        <div id="realTimeData"></div>
+    </div>
+
+    <script>
+        function displayData() {
+            // Current user
+            const currentUserData = localStorage.getItem('singletrack_current_user');
+            const currentUserDiv = document.getElementById('currentUser');
+            
+            if (currentUserData) {
+                try {
+                    const user = JSON.parse(currentUserData);
+                    currentUserDiv.innerHTML = `
+                        <div class="key">User Found:</div>
+                        <pre>${JSON.stringify(user, null, 2)}</pre>
+                        <div style="margin-top: 10px;">
+                            <span class="key">Role:</span> <span class="role">${user.role}</span>
+                            <span class="key">Approved:</span> <span class="value">${user.approved}</span>
+                            <span class="key">Username:</span> <span class="value">${user.username}</span>
+                            <span class="key">Email:</span> <span class="value">${user.email}</span>
+                        </div>
+                    `;
+                } catch (e) {
+                    currentUserDiv.innerHTML = `<div class="value">Error parsing user data: ${e.message}</div>`;
+                }
+            } else {
+                currentUserDiv.innerHTML = `<div class="value">No current user found in localStorage</div>`;
+            }
+            
+            // Test auth functions (simulate authService)
+            const authFunctionsDiv = document.getElementById('authFunctions');
+            
+            if (currentUserData) {
+                try {
+                    const user = JSON.parse(currentUserData);
+                    
+                    // Simulate canDevelop function
+                    const canDevelop = user?.role === 'contributor' || user?.role === 'admin' || user?.role === 'developer';
+                    const isAdmin = user?.role === 'admin' || user?.role === 'developer';
+                    const isContributor = user?.role === 'contributor' || user?.role === 'developer';
+                    
+                    authFunctionsDiv.innerHTML = `
+                        <div><span class="key">canDevelop():</span> <span class="${canDevelop ? 'admin' : 'value'}">${canDevelop}</span></div>
+                        <div><span class="key">isAdmin():</span> <span class="${isAdmin ? 'admin' : 'value'}">${isAdmin}</span></div>
+                        <div><span class="key">isContributor():</span> <span class="${isContributor ? 'admin' : 'value'}">${isContributor}</span></div>
+                        <div style="margin-top: 10px;">
+                            <strong>Expected Admin Menu Items:</strong><br>
+                            • Approvazioni: ${canDevelop ? '✅' : '❌'}<br>
+                            • Carica Tour: ${canDevelop ? '✅' : '❌'}<br>
+                            • Impostazioni: Always shown for logged users ✅
+                        </div>
+                    `;
+                } catch (e) {
+                    authFunctionsDiv.innerHTML = `<div class="value">Error testing auth functions: ${e.message}</div>`;
+                }
+            } else {
+                authFunctionsDiv.innerHTML = `<div class="value">No user to test auth functions</div>`;
+            }
+            
+            // All localStorage keys
+            const allKeysDiv = document.getElementById('allKeys');
+            const allKeys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.includes('singletrack')) {
+                    const value = localStorage.getItem(key);
+                    allKeys.push({ key, value: value?.substring(0, 100) + (value && value.length > 100 ? '...' : '') });
+                }
+            }
+            
+            if (allKeys.length > 0) {
+                allKeysDiv.innerHTML = allKeys.map(item => 
+                    `<div><span class="key">${item.key}:</span> <span class="value">${item.value}</span></div>`
+                ).join('');
+            } else {
+                allKeysDiv.innerHTML = `<div class="value">No singletrack-related keys found</div>`;
+            }
+            
+            // Tokens
+            const accessToken = localStorage.getItem('accessToken');
+            const refreshToken = localStorage.getItem('refreshToken');
+            
+            document.getElementById('realTimeData').innerHTML = `
+                <div><span class="key">Access Token:</span> <span class="value">${accessToken ? 'Present ✅' : 'Missing ❌'}</span></div>
+                <div><span class="key">Refresh Token:</span> <span class="value">${refreshToken ? 'Present ✅' : 'Missing ❌'}</span></div>
+                <div><span class="key">Timestamp:</span> <span class="value">${new Date().toLocaleTimeString()}</span></div>
+            `;
+        }
+        
+        function fixUserRole() {
+            const currentUserData = localStorage.getItem('singletrack_current_user');
+            if (currentUserData) {
+                try {
+                    const user = JSON.parse(currentUserData);
+                    user.role = 'admin';
+                    user.approved = true;
+                    localStorage.setItem('singletrack_current_user', JSON.stringify(user));
+                    alert('✅ User role fixed to admin!');
+                    displayData();
+                } catch (e) {
+                    alert('❌ Error fixing user role: ' + e.message);
+                }
+            } else {
+                alert('❌ No user found to fix');
+            }
+        }
+        
+        function clearAuth() {
+            if (confirm('Clear all authentication data? This will log you out.')) {
+                localStorage.removeItem('singletrack_current_user');
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+                alert('✅ All auth data cleared!');
+                displayData();
+            }
+        }
+        
+        function refreshPage() {
+            window.location.reload();
+        }
+        
+        async function testBackendAuth() {
+            try {
+                const response = await fetch('http://localhost:5001/api/users/me', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    alert('✅ Backend auth working!\nUser: ' + JSON.stringify(data.user, null, 2));
+                } else {
+                    alert('❌ Backend auth failed: ' + response.status + ' ' + response.statusText);
+                }
+            } catch (e) {
+                alert('❌ Backend connection error: ' + e.message);
+            }
+        }
+        
+        // Initial display
+        displayData();
+        
+        // Auto-refresh every 2 seconds
+        setInterval(displayData, 2000);
+        
+        // Listen for storage changes
+        window.addEventListener('storage', displayData);
+    </script>
+</body>
+</html>
