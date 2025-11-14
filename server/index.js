@@ -10,6 +10,7 @@ import { createPOI, getPOI, getApprovedPOIs, getUserPOIs, updatePOI, deletePOI, 
 import { createTour, getTour, getAllTours, getUserTours, updateTour, deleteTour } from './tourController.js';
 import { createReview, getReview, getTrackReviews, getUserReviews, updateReview, deleteReview } from './reviewController.js';
 import { migrateUsersFromLocalStorage, getAllUsers, userExists } from './migrationController.js';
+import { initializeAdminWithProfile } from './admin-profile.js';
 import bcryptjs from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -716,8 +717,8 @@ async function startServer() {
     db = await initDatabase();
     console.log('✅ Database initialized');
 
-    // Initialize admin if needed
-    await initializeAdminIfNeeded(db);
+    // Initialize admin account with persistent profile
+    await initializeAdminWithProfile(db);
 
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
