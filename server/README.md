@@ -33,6 +33,7 @@ CORS_ORIGIN=http://localhost:3000,https://outdoor-maps-app.vercel.app
 - **bcryptjs**: Password hashing
 - **jsonwebtoken**: JWT authentication
 - **express-rate-limit**: Rate limiting
+- **uuid**: Generate unique IDs
 - **dotenv**: Environment variables
 
 ## 🏃 Esecuzione
@@ -77,6 +78,38 @@ Server sarà disponibile su `http://localhost:5000`
 ### Health
 - `GET /api/health` - Health check
 
+### Tracks
+- `POST /api/tracks` - Create track
+- `GET /api/tracks/approved` - Get all approved tracks (public)
+- `GET /api/tracks/user` - Get user's tracks (auth required)
+- `GET /api/tracks/:id` - Get track by ID
+- `PUT /api/tracks/:id` - Update track (owner only)
+- `DELETE /api/tracks/:id` - Delete track (owner only)
+
+### POIs
+- `POST /api/pois` - Create POI
+- `GET /api/pois/approved` - Get all approved POIs (public)
+- `GET /api/pois/user` - Get user's POIs (auth required)
+- `GET /api/pois/:id` - Get POI by ID
+- `PUT /api/pois/:id` - Update POI (owner only)
+- `DELETE /api/pois/:id` - Delete POI (owner only)
+
+### Tours
+- `POST /api/tours` - Create tour
+- `GET /api/tours` - Get all tours
+- `GET /api/tours/user` - Get user's tours (auth required)
+- `GET /api/tours/:id` - Get tour by ID
+- `PUT /api/tours/:id` - Update tour (owner only)
+- `DELETE /api/tours/:id` - Delete tour (owner only)
+
+### Reviews
+- `POST /api/reviews` - Create review
+- `GET /api/reviews/track/:trackId` - Get reviews for a track
+- `GET /api/reviews/user` - Get user's reviews (auth required)
+- `GET /api/reviews/:id` - Get review by ID
+- `PUT /api/reviews/:id` - Update review (owner only)
+- `DELETE /api/reviews/:id` - Delete review (owner only)
+
 ## 🗄️ Database Schema
 
 ### Users
@@ -108,15 +141,16 @@ Server sarà disponibile su `http://localhost:5000`
 
 ## 📝 TODO
 
-- [ ] Implement track endpoints (CRUD + approval)
-- [ ] Implement POI endpoints (CRUD + approval)
-- [ ] Implement tour endpoints (CRUD)
-- [ ] Implement review endpoints (CRUD)
-- [ ] Admin panel endpoints
+- [x] Implement track endpoints (CRUD + approval)
+- [x] Implement POI endpoints (CRUD + approval)
+- [x] Implement tour endpoints (CRUD)
+- [x] Implement review endpoints (CRUD)
+- [ ] Admin panel endpoints (GET pending items, approve, reject)
 - [ ] Email verification
 - [ ] Password reset via email
-- [ ] User management (ban, demote, etc)
-- [ ] Deployment to Railway/Render/Heroku
+- [ ] User management (ban, demote, etc) - RBAC enforcement
+- [ ] Data migration from localStorage to backend
+- [ ] Deployment to Render with auto-restart after npm install
 
 ## 🚀 Deploy
 
