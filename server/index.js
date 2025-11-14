@@ -560,6 +560,126 @@ async function initializeAdminIfNeeded(database) {
   }
 }
 
+// ============ USER MANAGEMENT ENDPOINTS (ADMIN ONLY) ============
+
+// Get all pending users (need approval)
+app.get('/api/admin/users/pending', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    
+    const stmt = db.prepare('SELECT id, email, username, firstName, lastName, role, approved, createdAt FROM users WHERE approved = 0 AND role IN (?, ?)');
+    const users = stmt.all('free', 'plus');
+    res.json({ success: true, users });
+  } catch (err) {
+    console.error('Get pending users error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// Get all approved users
+app.get('/api/admin/users/approved', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    
+    const stmt = db.prepare('SELECT id, email, username, firstName, lastName, role, approved, createdAt FROM users WHERE approved = 1');
+    const users = stmt.all();
+    res.json({ success: true, users });
+  } catch (err) {
+    console.error('Get approved users error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// Approve user
+app.put('/api/admin/users/:id/approve', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    
+    const { id } = req.params;
+    const stmt = db.prepare('UPDATE users SET approved = 1 WHERE id = ?');
+    const result = stmt.run(id);
+    
+    if (result.changes === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    res.json({ success: true, message: 'User approved successfully' });
+  } catch (err) {
+    console.error('Approve user error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// Reject/delete user
+app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    
+    const { id } = req.params;
+    
+    // Protect admin accounts
+    const userStmt = db.prepare('SELECT role FROM users WHERE id = ?');
+    const user = userStmt.get(id);
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    if (user.role === 'admin') {
+      return res.status(403).json({ success: false, message: 'Cannot delete admin accounts' });
+    }
+    
+    const deleteStmt = db.prepare('DELETE FROM users WHERE id = ?');
+    const result = deleteStmt.run(id);
+    
+    if (result.changes === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    res.json({ success: true, message: 'User deleted successfully' });
+  } catch (err) {
+    console.error('Delete user error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// Change user role
+app.put('/api/admin/users/:id/role', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    
+    const { id } = req.params;
+    const { role } = req.body;
+    
+    if (!['free', 'plus', 'contributor', 'admin'].includes(role)) {
+      return res.status(400).json({ success: false, message: 'Invalid role' });
+    }
+    
+    const stmt = db.prepare('UPDATE users SET role = ?, approved = ? WHERE id = ?');
+    const approved = (role === 'contributor' || role === 'admin') ? 1 : 0;
+    const result = stmt.run(role, approved, id);
+    
+    if (result.changes === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    res.json({ success: true, message: 'User role updated successfully' });
+  } catch (err) {
+    console.error('Update user role error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
 // ============ SERVER STARTUP ============
 
 async function startServer() {
