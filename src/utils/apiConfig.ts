@@ -1,5 +1,20 @@
 // API Configuration
-const API_BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+const getApiBaseUrl = () => {
+  // Force production API in production environment
+  if (window.location.hostname.includes('vercel.app') || window.location.hostname.includes('outdoor-maps-app')) {
+    return 'https://singletrack-backend.onrender.com';
+  }
+  // Use environment variable for local development
+  return process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
+console.log('[API Config] Environment detection:', {
+  hostname: window.location.hostname,
+  envVar: process.env.REACT_APP_API_BASE,
+  finalUrl: API_BASE_URL
+});
 
 export const API_CONFIG = {
   BASE_URL: API_BASE_URL,
