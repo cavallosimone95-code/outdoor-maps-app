@@ -9,6 +9,7 @@ import { createTrack, getTrack, getApprovedTracks, getUserTracks, updateTrack, d
 import { createPOI, getPOI, getApprovedPOIs, getUserPOIs, updatePOI, deletePOI, getPendingPOIs, approvePOI, rejectPOI } from './poiController.js';
 import { createTour, getTour, getAllTours, getUserTours, updateTour, deleteTour } from './tourController.js';
 import { createReview, getReview, getTrackReviews, getUserReviews, updateReview, deleteReview } from './reviewController.js';
+import { migrateUsersFromLocalStorage, getAllUsers, userExists } from './migrationController.js';
 
 dotenv.config();
 
@@ -389,6 +390,53 @@ app.delete('/api/reviews/:id', authMiddleware, async (req, res) => {
     res.status(result.success ? 200 : 400).json(result);
   } catch (err) {
     console.error('Delete review error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// ============ MIGRATION ENDPOINTS ============
+
+app.post('/api/migrate/users-from-localstorage', async (req, res) => {
+  try {
+    // SECURITY: Only allow this endpoint in development or with a migration token
+    const migrationToken = process.env.MIGRATION_TOKEN;
+    const authHeader = req.headers.authorization;
+
+    if (!migrationToken || !authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const token = authHeader.substring(7);
+    if (token !== migrationToken) {
+      return res.status(401).json({ success: false, message: 'Invalid migration token' });
+    }
+
+    const { users } = req.body;
+
+    if (!users) {
+      return res.status(400).json({ success: false, message: 'Missing users array' });
+    }
+
+    const result = await migrateUsersFromLocalStorage(db, users);
+    res.json(result);
+  } catch (err) {
+    console.error('Migration error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.get('/api/migrate/check-user/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+    const exists = await userExists(db, email, '');
+    
+    if (exists) {
+      return res.json({ success: true, exists: true, user: { email: exists.email, username: exists.username } });
+    }
+    
+    res.json({ success: true, exists: false });
+  } catch (err) {
+    console.error('Check user error:', err);
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });

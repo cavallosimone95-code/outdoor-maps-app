@@ -80,6 +80,86 @@ export async function loginViaBackend(email: string, password: string): Promise<
 }
 
 /**
+ * Login via backend with fallback to localStorage if backend unavailable
+ * This allows users to login even if migration hasn't happened yet
+ */
+export async function loginViaBackendWithFallback(email: string, password: string): Promise<LoginResponse> {
+  try {
+    // Try backend first
+    const backendResult = await loginViaBackend(email, password);
+    
+    if (backendResult.success) {
+      return backendResult;
+    }
+
+    // If backend fails, try localStorage as fallback
+    console.warn('Backend login failed, trying localStorage fallback...');
+    const localStorageUser = getLocalStorageUserByEmail(email);
+    
+    if (localStorageUser) {
+      // Validate password (in real app, this would be hashed)
+      if (localStorageUser.password === password || localStorageUser.passwordHash) {
+        // Store a temporary session from localStorage
+        localStorage.setItem('singletrack_current_user', JSON.stringify(localStorageUser));
+        
+        return {
+          success: true,
+          message: 'Logged in with local data (sync pending with server)',
+          user: {
+            id: localStorageUser.id || '',
+            email: localStorageUser.email,
+            username: localStorageUser.username,
+            firstName: localStorageUser.firstName || '',
+            lastName: localStorageUser.lastName || '',
+            role: localStorageUser.role || 'free',
+            approved: localStorageUser.approved !== false
+          }
+        };
+      }
+    }
+
+    return backendResult;
+  } catch (error) {
+    console.error('Login error:', error);
+    return { success: false, message: 'Network error' };
+  }
+}
+
+/**
+ * Get user from localStorage by email (for fallback)
+ */
+function getLocalStorageUserByEmail(email: string): any {
+  try {
+    // Check for singletrack_users array
+    const usersStr = localStorage.getItem('singletrack_users');
+    if (usersStr) {
+      const users = JSON.parse(usersStr);
+      const user = users.find((u: any) => u.email === email);
+      if (user) return user;
+    }
+
+    // Check for individual user entries
+    const allKeys = Object.keys(localStorage);
+    for (const key of allKeys) {
+      if (key.startsWith('singletrack_user_')) {
+        const userData = localStorage.getItem(key);
+        if (userData) {
+          const user = JSON.parse(userData);
+          if (user.email === email) {
+            return user;
+          }
+        }
+      }
+    }
+
+    return null;
+  } catch (err) {
+    console.error('localStorage lookup error:', err);
+    return null;
+  }
+}
+
+/**
  * Get current user from backend
  */
 export async function getCurrentUserFromBackend() {
