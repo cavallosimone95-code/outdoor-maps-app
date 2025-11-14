@@ -718,7 +718,8 @@ async function startServer() {
     console.log('✅ Database initialized');
 
     // Initialize admin account with persistent profile
-    await initializeAdminWithProfile(db);
+    // await initializeAdminWithProfile(db); // Disabled temporarily
+    await initializeAdminIfNeeded(db);
 
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
