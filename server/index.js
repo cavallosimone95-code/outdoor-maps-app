@@ -696,16 +696,26 @@ app.get('/api/admin/users/all', authMiddleware, async (req, res) => {
       return res.status(403).json({ success: false, message: 'Admin access required' });
     }
     
+    console.log('[DEBUG] Database object:', !!db);
+    console.log('[DEBUG] User role:', req.user.role);
+    
+    // Test basic database query first
+    const testQuery = db.prepare('SELECT name FROM sqlite_master WHERE type="table"');
+    const tables = testQuery.all();
+    console.log('[DEBUG] Available tables:', tables.map(t => t.name));
+    
     const stmt = db.prepare(`
       SELECT id, email, username, firstName, lastName, role, approved, createdAt 
       FROM users 
       ORDER BY createdAt DESC
     `);
     const users = stmt.all();
-    res.json({ success: true, users, total: users.length });
+    console.log('[DEBUG] Found users:', users.length);
+    
+    res.json({ success: true, users, total: users.length, debug: { tables: tables.map(t => t.name) } });
   } catch (err) {
     console.error('Get all users error:', err);
-    res.status(500).json({ success: false, message: 'Internal server error' });
+    res.status(500).json({ success: false, message: 'Internal server error', error: err.message });
   }
 });
 
