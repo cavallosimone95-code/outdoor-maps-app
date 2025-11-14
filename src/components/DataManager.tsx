@@ -236,7 +236,7 @@ Sei sicuro di voler procedere?`;
                     </div>
                 )}
 
-                {isApprovedDeveloper && (
+                {currentUser && (
                     <label className="btn-submit" style={{ width: '100%', marginBottom: '8px', display: 'block', textAlign: 'center', cursor: 'pointer' }}>
                         📥 Importa backup
                         <input 
