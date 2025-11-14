@@ -6,6 +6,9 @@ import fs from 'fs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH = path.join(__dirname, 'data', 'singletrack.db');
 
+// Global database instance
+let dbInstance = null;
+
 // Ensure data directory exists
 try {
   if (!fs.existsSync(path.join(__dirname, 'data'))) {
@@ -145,6 +148,8 @@ export function initDatabase() {
           if (err) {
             reject(err);
           } else {
+            // Store global reference
+            dbInstance = db;
             resolve(db);
           }
         });
@@ -154,7 +159,7 @@ export function initDatabase() {
 }
 
 export function getDatabase() {
-  return new sqlite3.Database(DB_PATH);
+  return dbInstance;
 }
 
 export function runAsync(db, sql, params = []) {
