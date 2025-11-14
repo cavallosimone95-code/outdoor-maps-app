@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { getDatabase } from './db.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_secret_key';
 
@@ -59,7 +60,7 @@ export function optionalAuthMiddleware(req, res, next) {
 }
 
 // Admin middleware that loads full user object
-export function adminAuthMiddleware(db) {
+export function adminAuthMiddleware() {
   return async (req, res, next) => {
     console.log('[ADMIN_AUTH] Starting admin auth middleware');
     
@@ -83,6 +84,9 @@ export function adminAuthMiddleware(db) {
     console.log('[ADMIN_AUTH] Token decoded, userId:', decoded.userId);
 
     try {
+      // Get database instance
+      const db = getDatabase();
+      
       // Check if database is available
       if (!db) {
         console.error('[ADMIN_AUTH] Database is not available');

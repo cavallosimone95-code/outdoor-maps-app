@@ -572,7 +572,7 @@ async function initializeAdminIfNeeded(database) {
 // ============ USER MANAGEMENT ENDPOINTS (ADMIN ONLY) ============
 
 // Get all pending users (need approval)
-app.get('/api/admin/users/pending', adminAuthMiddleware(db), async (req, res) => {
+app.get('/api/admin/users/pending', adminAuthMiddleware(), async (req, res) => {
   try {
     const stmt = db.prepare(`
       SELECT id, email, username, firstName, lastName, role, approved, createdAt 
@@ -588,7 +588,7 @@ app.get('/api/admin/users/pending', adminAuthMiddleware(db), async (req, res) =>
 });
 
 // Get all approved users
-app.get('/api/admin/users/approved', adminAuthMiddleware(db), async (req, res) => {
+app.get('/api/admin/users/approved', adminAuthMiddleware(), async (req, res) => {
   try {
     
     const stmt = db.prepare(`
@@ -605,7 +605,7 @@ app.get('/api/admin/users/approved', adminAuthMiddleware(db), async (req, res) =
 });
 
 // Approve user
-app.put('/api/admin/users/:id/approve', adminAuthMiddleware(db), async (req, res) => {
+app.put('/api/admin/users/:id/approve', adminAuthMiddleware(), async (req, res) => {
   try {
     const { id } = req.params;
     const stmt = db.prepare('UPDATE users SET approved = 1 WHERE id = ?');
@@ -623,7 +623,7 @@ app.put('/api/admin/users/:id/approve', adminAuthMiddleware(db), async (req, res
 });
 
 // Reject/delete user
-app.delete('/api/admin/users/:id', adminAuthMiddleware(db), async (req, res) => {
+app.delete('/api/admin/users/:id', adminAuthMiddleware(), async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -654,7 +654,7 @@ app.delete('/api/admin/users/:id', adminAuthMiddleware(db), async (req, res) => 
 });
 
 // Change user role
-app.put('/api/admin/users/:id/role', adminAuthMiddleware(db), async (req, res) => {
+app.put('/api/admin/users/:id/role', adminAuthMiddleware(), async (req, res) => {
   try {
     const { id } = req.params;
     const { role } = req.body;
@@ -679,7 +679,7 @@ app.put('/api/admin/users/:id/role', adminAuthMiddleware(db), async (req, res) =
 });
 
 // DEBUG: Get all users (temporary - remove in production)
-app.get('/api/admin/users/all', adminAuthMiddleware(db), async (req, res) => {
+app.get('/api/admin/users/all', adminAuthMiddleware(), async (req, res) => {
   try {
     console.log('[DEBUG] Database object:', !!db);
     console.log('[DEBUG] User role:', req.user.role);
