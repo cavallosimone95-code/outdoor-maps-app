@@ -19,6 +19,13 @@ import { createTour, getTour, getAllTours, getUserTours, updateTour, deleteTour 
 import { createReview, getReview, getTrackReviews, getUserReviews, updateReview, deleteReview } from './reviewController.js';
 import { migrateUsersFromLocalStorage, getAllUsers, userExists } from './migrationController.js';
 import { initializeAdminWithProfile } from './admin-profile.js';
+import { 
+  exportDatabaseToJSON, 
+  importDatabaseFromJSON, 
+  restoreFromGitHub, 
+  startAutoBackup,
+  saveBackupToFile
+} from './backup-service.js';
 import bcryptjs from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -719,24 +726,73 @@ app.get('/api/debug/users', async (req, res) => {
     }
     
     // Test multiple queries
-    const countStmt = db.prepare('SELECT COUNT(*) as count FROM users');
-    const countResult = countStmt.get();
+    let countResult, users, tables;
     
-    const allStmt = db.prepare('SELECT id, email, role FROM users');
-    const users = allStmt.all();
+    try {
+      const countStmt = db.prepare('SELECT COUNT(*) as count FROM users');
+      countResult = countStmt.get();
+    } catch (err) {
+      countResult = { error: err.message };
+    }
     
-    const tablesStmt = db.prepare("SELECT name FROM sqlite_master WHERE type='table'");
-    const tables = tablesStmt.all();
+    try {
+      const allStmt = db.prepare('SELECT id, email, role FROM users');
+      users = allStmt.all();
+    } catch (err) {
+      users = { error: err.message };
+    }
+    
+    try {
+      const tablesStmt = db.prepare("SELECT name FROM sqlite_master WHERE type='table'");
+      tables = tablesStmt.all();
+    } catch (err) {
+      tables = { error: err.message };
+    }
     
     res.json({ 
       users, 
-      count: users.length,
-      totalCount: countResult.count,
-      tables: tables.map(t => t.name),
+      count: Array.isArray(users) ? users.length : 'error',
+      totalCount: countResult,
+      tables,
       dbAvailable: !!db 
     });
   } catch (err) {
     res.json({ error: err.message, stack: err.stack });
+  }
+});
+
+// Manual backup endpoint
+app.post('/api/backup/export', adminAuthMiddleware(), async (req, res) => {
+  try {
+    const backup = await exportDatabaseToJSON();
+    const fileName = `backup-${Date.now()}.json`;
+    
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Type', 'application/json');
+    res.json(backup);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Manual restore endpoint
+app.post('/api/backup/import', adminAuthMiddleware(), async (req, res) => {
+  try {
+    const backup = req.body;
+    const imported = await importDatabaseFromJSON(backup);
+    res.json({ success: true, recordsImported: imported });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// GitHub restore endpoint
+app.post('/api/backup/restore-github', adminAuthMiddleware(), async (req, res) => {
+  try {
+    const success = await restoreFromGitHub();
+    res.json({ success, message: success ? 'Database restored from GitHub' : 'No backup found or restore failed' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
@@ -748,13 +804,33 @@ async function startServer() {
     db = await initDatabase();
     console.log('✅ Database initialized');
 
-    // Initialize admin account with persistent profile
-    // await initializeAdminWithProfile(db); // Disabled temporarily
-    await initializeAdminIfNeeded(db);
+    // Try to restore from GitHub backup first
+    console.log('🔄 Attempting to restore from backup...');
+    const restored = await restoreFromGitHub();
+    
+    if (!restored) {
+      console.log('📭 No backup found, initializing fresh database...');
+      // Initialize admin account with persistent profile
+      // await initializeAdminWithProfile(db); // Disabled temporarily
+      await initializeAdminIfNeeded(db);
+    } else {
+      console.log('✅ Database restored from backup');
+      // Ensure admin exists after restore
+      await initializeAdminIfNeeded(db);
+    }
+
+    // Start auto backup service (only in production)
+    if (process.env.NODE_ENV === 'production') {
+      startAutoBackup();
+      console.log('🔄 Auto backup service started');
+    }
 
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`📡 CORS enabled for: ${CORS_ORIGIN}`);
+      console.log(`📡 CORS enabled for: ${corsOrigins.join(', ')}`);
+      if (restored) {
+        console.log('💾 Database restored from backup');
+      }
     });
   } catch (err) {
     console.error('⚠️  Database initialization failed:', err.message);
@@ -763,7 +839,7 @@ async function startServer() {
     // Still start the server so health check works
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT} (DB not available)`);
-      console.log(`📡 CORS enabled for: ${CORS_ORIGIN}`);
+      console.log(`📡 CORS enabled for: ${corsOrigins.join(', ')}`);
     });
   }
 }
