@@ -796,6 +796,23 @@ app.post('/api/backup/restore-github', adminAuthMiddleware(), async (req, res) =
   }
 });
 
+// TEMPORARY: Initial setup endpoint (no auth for first setup)
+app.post('/api/setup/import-initial', async (req, res) => {
+  try {
+    console.log('🚀 Initial setup import requested');
+    const backup = req.body;
+    const imported = await importDatabaseFromJSON(backup);
+    
+    // After import, ensure admin is properly configured
+    await initializeAdminIfNeeded(getDatabase());
+    
+    res.json({ success: true, recordsImported: imported, message: 'Initial setup completed' });
+  } catch (err) {
+    console.error('Initial setup error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ============ SERVER STARTUP ============
 
 async function startServer() {
